@@ -2,146 +2,119 @@ import streamlit as st
 import pandas as pd
 import numpy as np
 import plotly.graph_objects as go
-from plotly.subplots import make_subplots
 
-# Konfigurasi Halaman Utama
-st.set_page_config(page_title="Dashboard Inflasi Indonesia", layout="wide", page_icon="📈")
+st.set_page_config(page_title="Forecasting Inflasi Indonesia", layout="wide", page_icon="🔮")
+
+# ==========================================
+# DUMMY DATA — Akan diganti query Aiven nanti
+# ==========================================
+@st.cache_data
+def load_data():
+    """Nanti fungsi ini diganti jadi query ke Aiven PostgreSQL."""
+    np.random.seed(42)
+    dates = pd.date_range('2020-01-01', '2025-12-01', freq='MS')
+    n = len(dates)
+
+    oil = np.clip(60 + np.cumsum(np.random.normal(0.5, 3, n)), 20, 130)
+    kurs = np.clip(14200 + np.cumsum(np.random.normal(15, 120, n)), 13500, 17000).astype(int)
+    inflasi = np.round(0.3 + (oil - 60) * 0.01 + (kurs - 14200) * 0.0002 + np.random.normal(0, 0.15, n), 2)
+
+    return pd.DataFrame({
+        'tanggal': dates, 'tahun': dates.year, 'bulan': dates.month,
+        'inflasi_mtom': inflasi,
+        'harga_minyak_usd': np.round(oil, 2),
+        'perubahan_persen_minyak': np.round(np.concatenate([[0], np.diff(oil) / oil[:-1] * 100]), 2),
+        'kurs_usd_idr': kurs,
+        'perubahan_persen_kurs': np.round(np.concatenate([[0], np.diff(kurs) / kurs[:-1] * 100]), 2),
+        'harga_pertalite': np.where(dates < '2022-09-01', 7650, 10000).astype(int),
+        'harga_solar': np.where(dates < '2022-09-01', 5150, 6800).astype(int),
+    })
+
+df = load_data()
 
 # ==========================================
 # SIDEBAR
 # ==========================================
 with st.sidebar:
-    st.image("https://cdn-icons-png.flaticon.com/512/3135/3135715.png", width=80) # Ikon Data
-    st.title("Panel Navigasi")
-    st.write("Gunakan menu di bawah untuk mengatur filter data.")
-    
-    st.subheader("Filter Data")
-    tahun_pilih = st.selectbox("Pilih Tahun:", ["Semua Tahun", "2024", "2023", "2022", "2021", "2020"])
-    wilayah_pilih = st.selectbox("Wilayah:", ["INDONESIA (Nasional)", "MADIUN"])
-    
+    st.header("⚙️ Konfigurasi")
+
+    st.caption("📡 Sumber Data")
+    st.code("CSV historis (2020-2026)\n→ ETL Pipeline\n→ Aiven PostgreSQL\n→ Streamlit", language="text")
+    st.info("📌 Data **statis historis** (bulanan), bukan real-time.")
+    st.warning("⏳ Mode Dummy — belum terhubung Aiven.", icon="⚠️")
+
     st.divider()
-    st.caption("Status: 🟡 Menunggu Data Aiven")
+    st.caption("📊 Dashboard BI")
+    st.markdown("[Buka di Google Data Studio →](https://datastudio.google.com/u/0/reporting/33b3fc15-7315-4340-a178-3c860fde9ab3/page/T5M0F/edit)")
 
 # ==========================================
-# HEADER
+# JUDUL
 # ==========================================
-st.title("📈 Dashboard BI & Forecasting Inflasi Indonesia")
-st.markdown("*(Mode Dummy - Desain UI/UX)*")
-
-# Membuat 2 Tab utama
-tab1, tab2 = st.tabs(["📊 Dashboard BI Historis", "🔮 ML Forecasting Simulator"])
+st.markdown("## 🔮 Forecasting & Prediksi Inflasi Indonesia")
+st.caption("Machine Learning untuk prediksi inflasi berdasarkan harga minyak global, kurs USD/IDR, dan harga BBM — Data historis dari Aiven PostgreSQL.")
 
 # ==========================================
-# TAB 1: DASHBOARD BI HISTORIS
+# FORECAST GRAFIK
 # ==========================================
-with tab1:
-    st.header("Kondisi Makroekonomi Saat Ini")
-    
-    # --- 1. KPI Cards (Lebih Rapi) ---
-    col1, col2, col3, col4 = st.columns(4)
-    with col1:
-        st.metric(label="Inflasi Nasional (Bulan Ini)", value="2.85%", delta="-0.15% (Turun)")
-    with col2:
-        st.metric(label="Harga Minyak WTI (USD/Barel)", value="$82.50", delta="+$1.20 (Naik)")
-    with col3:
-        st.metric(label="Kurs (USD/IDR)", value="Rp 16.100", delta="-Rp 50 (Menguat)", delta_color="inverse")
-    with col4:
-        st.metric(label="Harga Pertalite", value="Rp 10.000", delta="Tetap", delta_color="off")
-    
-    st.divider()
-    
-    # --- 2. Chart Tren (Plotly Dual Axis - Lebih Profesional) ---
-    st.subheader("Tren Historis Inflasi vs Harga Minyak")
-    
-    # Generate Dummy Data
-    dummy_dates = pd.date_range(start='2022-01-01', periods=24, freq='ME')
-    dummy_df = pd.DataFrame({
-        'Tanggal': dummy_dates,
-        'Inflasi (%)': np.random.uniform(2.0, 6.0, 24).round(2),
-        'Harga Minyak ($)': np.random.uniform(70, 110, 24).round(2),
-        'Kurs (Rp)': np.random.uniform(14500, 16500, 24).round(0)
-    })
-    
-    # Membuat Chart Plotly dengan 2 Sumbu Y
-    fig = make_subplots(specs=[[{"secondary_y": True}]])
-    
-    # Tambahkan Garis Inflasi (Biru)
-    fig.add_trace(
-        go.Scatter(x=dummy_df['Tanggal'], y=dummy_df['Inflasi (%)'], name="Inflasi (%)", mode='lines+markers', line=dict(color='royalblue', width=3)),
-        secondary_y=False,
-    )
-    
-    # Tambahkan Garis Harga Minyak (Merah)
-    fig.add_trace(
-        go.Scatter(x=dummy_df['Tanggal'], y=dummy_df['Harga Minyak ($)'], name="Harga Minyak WTI ($)", mode='lines', line=dict(color='firebrick', width=2, dash='dot')),
-        secondary_y=True,
-    )
-    
-    # Konfigurasi Layout Chart
-    fig.update_layout(
-        title_text="Perbandingan Laju Inflasi dan Pergerakan Harga Minyak Dunia",
-        hovermode="x unified",
-        legend=dict(orientation="h", yanchor="bottom", y=1.02, xanchor="right", x=1)
-    )
-    fig.update_yaxes(title_text="<b>Inflasi</b> (%)", secondary_y=False)
-    fig.update_yaxes(title_text="<b>Harga Minyak</b> ($)", secondary_y=True)
-    
-    st.plotly_chart(fig, use_container_width=True)
-    
-    # --- 3. Tabel Master Data ---
-    st.subheader("Preview Dataset Master")
-    st.dataframe(dummy_df.style.format({
-        'Inflasi (%)': '{:.2f}%',
-        'Harga Minyak ($)': '${:.2f}',
-        'Kurs (Rp)': 'Rp {:,.0f}'
-    }), use_container_width=True)
+st.subheader("📈 Forecast Inflasi (3 Bulan ke Depan)")
+st.caption("*Akan diganti model ML asli (Linear Regression / Random Forest)*")
 
+# Forecast dummy dari tren 6 bulan terakhir
+last_6 = df.tail(6)
+trend = np.polyfit(range(6), last_6['inflasi_mtom'].values, 1)
+forecast_vals = [trend[0] * (6 + i) + trend[1] for i in range(3)]
+future_dates = pd.date_range(df['tanggal'].max() + pd.DateOffset(months=1), periods=3, freq='MS')
+
+fig_fc = go.Figure()
+fig_fc.add_trace(go.Scatter(x=df['tanggal'], y=df['inflasi_mtom'], name='Data Historis', line=dict(color='#6366f1', width=2)))
+fig_fc.add_trace(go.Scatter(
+    x=[df['tanggal'].iloc[-1]] + list(future_dates),
+    y=[df['inflasi_mtom'].iloc[-1]] + forecast_vals,
+    name='Forecast', mode='lines+markers',
+    line=dict(color='#f59e0b', width=3, dash='dash'),
+    marker=dict(size=8, symbol='diamond')
+))
+fig_fc.update_layout(
+    title="Proyeksi Inflasi 3 Bulan ke Depan (Dummy)",
+    height=400, yaxis_title="Inflasi MtM (%)",
+    hovermode="x unified",
+    legend=dict(orientation="h", y=1.1, x=0.5, xanchor="center"),
+)
+st.plotly_chart(fig_fc, use_container_width=True)
+
+st.divider()
 
 # ==========================================
-# TAB 2: ML FORECASTING SIMULATOR
+# SIMULATOR WHAT-IF
 # ==========================================
-with tab2:
-    st.header("Simulator Prediksi Inflasi (What-If Analysis)")
-    st.markdown("Uji coba model **Machine Learning (Random Forest/Linear Regression)** dengan memasukkan berbagai skenario ekonomi di masa depan.")
-    
-    st.write("---")
-    
-    col_input, col_output = st.columns([1.5, 2])
-    
-    with col_input:
-        st.subheader("⚙️ Parameter Skenario")
-        st.write("Sesuaikan *slider* di bawah ini:")
-        
-        minyak_input = st.slider("🛢️ Harga Minyak Dunia (USD/Barel)", min_value=40.0, max_value=120.0, value=85.0, step=0.5)
-        kurs_input = st.slider("💵 Kurs (USD/IDR)", min_value=14000, max_value=17500, value=16200, step=100)
-        bbm_input = st.selectbox("⛽ Status Harga BBM Subsidi (Pertalite)", ["Tetap (Rp 10.000)", "Naik (Rp 12.000)", "Turun (Rp 8.000)"])
-        
-    with col_output:
-        st.subheader("📊 Hasil Prediksi Model")
-        
-        # Logic Dummy ML
-        base_inflasi = 2.5
-        pengaruh_minyak = (minyak_input - 80) * 0.04
-        pengaruh_kurs = (kurs_input - 15000) * 0.001
-        
-        # Pengaruh BBM
-        if "Naik" in bbm_input:
-            pengaruh_bbm = 1.2
-        elif "Turun" in bbm_input:
-            pengaruh_bbm = -0.5
-        else:
-            pengaruh_bbm = 0
-            
-        prediksi_dummy = base_inflasi + pengaruh_minyak + pengaruh_kurs + pengaruh_bbm
-        
-        # Tampilan Hasil
-        st.metric(label="Prediksi Inflasi Bulan Depan", value=f"{prediksi_dummy:.2f}%", delta=f"{prediksi_dummy - 2.85:.2f}% (Bandingkan dari bulan ini)")
-        
-        st.success(f"Berdasarkan skenario yang kamu atur, prediksi inflasi bulan depan akan **{'NAIK' if prediksi_dummy > 2.85 else 'TURUN'}** menjadi **{prediksi_dummy:.2f}%**.")
-        
-        st.markdown(f"""
-        **🧠 Analisis Singkat dari Model:**
-        - Harga minyak di **${minyak_input}** menyumbang sekitar `+{pengaruh_minyak:.2f}%` terhadap tekanan inflasi.
-        - Nilai tukar di **Rp {kurs_input}** memberikan efek tekanan inflasi sebesar `+{pengaruh_kurs:.2f}%`.
-        - Kebijakan BBM subsidi yang dipilih memberikan efek `+{pengaruh_bbm:.2f}%`.
-        """)
+st.subheader("🎛️ Simulator What-If")
+st.caption("Masukkan skenario ekonomi untuk memprediksi inflasi bulan depan menggunakan model Machine Learning.")
+
+ci, _, co = st.columns([3, 0.5, 4])
+
+with ci:
+    minyak_in = st.slider("🛢️ Harga Minyak (USD/Barel)", 40.0, 130.0, float(df['harga_minyak_usd'].iloc[-1]), 0.5)
+    kurs_in = st.slider("💵 Kurs USD/IDR", 13500, 18000, int(df['kurs_usd_idr'].iloc[-1]), 100)
+    bbm_in = st.radio("⛽ Kebijakan Harga BBM Subsidi", ["Tetap", "Naik (+Rp 2.000)", "Turun (-Rp 2.000)"], horizontal=True)
+
+with co:
+    efek_m = (minyak_in - 70) * 0.015
+    efek_k = (kurs_in - 14500) * 0.0003
+    efek_b = 1.0 if "Naik" in bbm_in else (-0.4 if "Turun" in bbm_in else 0)
+    pred = round(0.3 + efek_m + efek_k + efek_b, 2)
+
+    st.metric("📈 Prediksi Inflasi Bulan Depan", f"{pred:.2f}%", f"{pred - df['inflasi_mtom'].iloc[-1]:+.2f}% vs data terakhir")
+
+    st.markdown(f"""
+    **Kontribusi per faktor:**
+    - Harga Minyak → `{efek_m:+.3f}%`
+    - Kurs USD/IDR → `{efek_k:+.3f}%`
+    - Kebijakan BBM → `{efek_b:+.3f}%`
+    """)
+
+    if pred > 1.0:
+        st.error(f"⚠️ Inflasi diprediksi **tinggi** ({pred:.2f}%).")
+    elif pred > 0.5:
+        st.warning(f"⚡ Inflasi **moderat** ({pred:.2f}%).")
+    else:
+        st.success(f"✅ Inflasi **rendah** ({pred:.2f}%). Stabil.")
