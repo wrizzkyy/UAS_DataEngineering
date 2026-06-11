@@ -3,6 +3,7 @@ import streamlit as st
 import pandas as pd
 import numpy as np
 import plotly.graph_objects as go
+import joblib
 from sqlalchemy import create_engine
 from dotenv import load_dotenv
 from sklearn.ensemble import GradientBoostingRegressor
@@ -57,11 +58,32 @@ except Exception as e:
     st.stop()
 
 # ==========================================
-# 2. MELATIH MODEL MACHINE LEARNING
+# 2. MEMUAT MODEL MACHINE LEARNING
 # ==========================================
+MODEL_DIR = "models"
+
 @st.cache_resource
-def train_model(data):
-    """Melatih algoritma Gradient Boosting."""
+def load_saved_model():
+    """Memuat model yang sudah dilatih dari file joblib.
+    
+    Model disimpan oleh notebook Prediksi_Inflasi_Model.ipynb.
+    Jika file model tidak ditemukan, akan melatih ulang model.
+    """
+    model_path = os.path.join(MODEL_DIR, "best_model.pkl")
+    scaler_path = os.path.join(MODEL_DIR, "scaler.pkl")
+    
+    if os.path.exists(model_path) and os.path.exists(scaler_path):
+        model = joblib.load(model_path)
+        scaler = joblib.load(scaler_path)
+        return model, scaler
+    else:
+        # Fallback: latih ulang jika model belum tersimpan
+        st.warning("⚠️ Model tersimpan tidak ditemukan. Melatih ulang model...")
+        return _train_model_fallback(df)
+
+@st.cache_resource
+def _train_model_fallback(data):
+    """Melatih ulang model sebagai fallback jika file model tidak ditemukan."""
     fitur_kolom = ["harga_minyak_usd", "perubahan_persen_minyak", "kurs_usd_idr"]
     target_kolom = "inflasi_persen"
     
@@ -81,7 +103,7 @@ def train_model(data):
     
     return gb_model, scaler
 
-gb_model, scaler = train_model(df)
+gb_model, scaler = load_saved_model()
 
 # ==========================================
 # 3. TAMPILAN SIDEBAR
