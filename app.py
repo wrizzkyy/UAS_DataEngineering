@@ -83,7 +83,8 @@ except Exception as e:
 # ==========================================
 # 2. MEMUAT MODEL MACHINE LEARNING
 # ==========================================
-MODEL_DIR = "models"
+BASE_DIR = os.path.dirname(os.path.abspath(__file__))
+MODEL_DIR = os.path.join(BASE_DIR, "models")
 
 @st.cache_resource
 def load_saved_model():
