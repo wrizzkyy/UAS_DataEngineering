@@ -6,11 +6,11 @@
 
 ## Kontributor
 
-| Nama Lengkap                     | NIM | Peran               |
-|----------------------------------|-----|---------------------|
-| Mohammad Hanif Huda Afrizal      | -   | Data Engineer       |
-| Achmad Alvin Al Falah            | -   | Data Analyst        |
-| Fachrozzi Rizky Wibowo           | -   | Project Manager     |
+| Nama Lengkap                | NIM       | Peran           |
+| -----------------------------| -----------| -----------------|
+| Mohammad Hanif Huda Afrizal | 244311049 | Data Engineer   |
+| Achmad Alvin Al Falah       | 244311031 | Data Analyst    |
+| Fachrozzi Rizky Wibowo      | 244311041 | Project Manager |
 
 ---
 
