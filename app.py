@@ -102,7 +102,6 @@ def load_saved_model():
         return model, scaler
     else:
         # Fallback: latih ulang jika model belum tersimpan
-        st.warning("⚠️ Model tersimpan tidak ditemukan. Melatih ulang model...")
         return _train_model_fallback(df)
 
 @st.cache_resource
