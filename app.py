@@ -118,8 +118,10 @@ def _train_model_fallback(data):
     
     gb_model = GradientBoostingRegressor(
         n_estimators=200,
-        learning_rate=0.05,
+        learning_rate=0.1,
         max_depth=5,
+        min_samples_split=5,
+        min_samples_leaf=2,
         random_state=42
     )
     gb_model.fit(X_scaled, y)
@@ -166,7 +168,6 @@ with col_input:
     
     minyak_in = st.slider("Harga Minyak Mentah (USD/Barel)", 40.0, 150.0, minyak_bulan_lalu, 0.5)
     kurs_in = st.slider("Nilai Tukar (USD/IDR)", 13500, 18000, kurs_bulan_lalu, 100)
-    bbm_in = st.radio("Penyesuaian Kebijakan BBM Subsidi", ["Tidak Ada", "Kenaikan (+Rp 2.000)", "Penurunan (-Rp 2.000)"], horizontal=True)
 
 with col_output:
     if minyak_bulan_lalu != 0:
@@ -181,25 +182,15 @@ with col_output:
     }])
     
     input_scaled = scaler.transform(tabel_input)
-    pred_dasar_ml = gb_model.predict(input_scaled)[0]
-    
-    if "Kenaikan" in bbm_in:
-        efek_bbm = 1.0 
-    elif "Penurunan" in bbm_in:
-        efek_bbm = -0.4 
-    else:
-        efek_bbm = 0
-        
-    pred_final = round(pred_dasar_ml + efek_bbm, 2)
+    pred_final = round(gb_model.predict(input_scaled)[0], 2)
     inflasi_bulan_lalu = df['inflasi_persen'].iloc[-1]
 
     st.metric("Proyeksi Inflasi Bulan Berikutnya", f"{pred_final:.2f}%", f"{pred_final - inflasi_bulan_lalu:+.2f}% dari bulan sebelumnya")
 
-    # Menampilkan rincian sebagai tabel agar lebih profesional
-    st.markdown("**Dekonstruksi Model:**")
+    st.markdown("**Fitur yang Digunakan Model:**")
     df_rincian = pd.DataFrame({
-        "Komponen Analisis": ["Prediksi Algoritma ML", "Faktor Penyesuaian BBM"],
-        "Kontribusi": [f"{pred_dasar_ml:.2f}%", f"{efek_bbm:+.2f}%"]
+        "Fitur": ["Harga Minyak Mentah", "Perubahan Harga Minyak", "Nilai Tukar (Kurs)"],
+        "Nilai Input": [f"${minyak_in:.1f}/barel", f"{perubahan_minyak_in:+.2f}%", f"Rp {kurs_in:,}/USD"]
     })
     st.dataframe(df_rincian, hide_index=True, width='stretch')
 
@@ -228,24 +219,17 @@ sim_minyak = minyak_in
 sim_kurs = kurs_in
 
 for bulan_ke in range(1, 3):
-    minyak_sebelumnya = sim_minyak
-    sim_minyak = sim_minyak + 0.5 
-    sim_kurs = sim_kurs + 50
-    
-    perubahan_persen = ((sim_minyak - minyak_sebelumnya) / minyak_sebelumnya) * 100 if minyak_sebelumnya != 0 else 0
-    
+    # Asumsi kondisi stagnan: harga minyak dan kurs tetap
+    # sama dengan nilai slider yang dipilih (perubahan = 0%)
     tabel_pred = pd.DataFrame([{
-        "harga_minyak_usd": sim_minyak,
-        "perubahan_persen_minyak": perubahan_persen,
-        "kurs_usd_idr": sim_kurs
+        "harga_minyak_usd": minyak_in,
+        "perubahan_persen_minyak": 0.0,
+        "kurs_usd_idr": kurs_in
     }])
     
     pred_scaled = scaler.transform(tabel_pred)
     tebakan_ml = gb_model.predict(pred_scaled)[0]
-    
-    sisa_efek_bbm = efek_bbm * (0.5 ** bulan_ke) 
-    tebakan_total = tebakan_ml + sisa_efek_bbm
-    hasil_tebakan_3_bulan.append(round(tebakan_total, 2))
+    hasil_tebakan_3_bulan.append(round(tebakan_ml, 2))
 
 fig_fc = go.Figure()
 
