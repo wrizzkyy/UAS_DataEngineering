@@ -1,102 +1,125 @@
-## Project Information
+﻿# DATA-ENGINEERING
 
-**Project Name**: the Impact of Global Crude Oil Prices on Indonesia's Inflation
-**Created By**: Data Engineering Team 6
-**Date**: February 10, 2026
-**Version**: 1.0
+# Proyek : Pengaruh Harga Minyak Mentah Global terhadap Inflasi di Indonesia
 
-## 1. Executive Summary
+---
 
-### 1.1 Project Overview
+## Kontributor
 
-- **Tujuan Project**: Mengembangkan sistem analitik untuk mempredisiksi inflasi berdasarkan harga minyak mentah global
-- **Scope Project**: Integrasi data harga minyak mentah global, dan inflasi di Indonesia
-- **Expected Outcomes**: Analisis hubungan antara harga minyak mentah global dan inflasi di Indonesia
-- **Timeline**: 5 bulan (Februari - Juni 2026)
+| Nama Lengkap                     | NIM | Peran               |
+|----------------------------------|-----|---------------------|
+| Mohammad Hanif Huda Afrizal      | -   | Data Engineer       |
+| Achmad Alvin Al Falah            | -   | Data Analyst        |
+| Fachrozzi Rizky Wibowo           | -   | Project Manager     |
 
-### 1.2 Stakeholders
+---
 
-- **Project Owner**: Mahasiswa Politeknik Negeri Madiun jurusan TRPL
-- **Team Members**:
-  - Data Engineer: Mohammad Hanif Huda Afrizal
-  - Data Analyst: Achmad Alvin Al Falah
-  - Project Manager: Fachrozzi Rizky Wibowo
-- **End Users**:
-  - Pemerintah Daerah
-  - Masyarakat umum
+## Deskripsi Proyek
+Project ini dikembangkan untuk mengidentifikasi hubungan antara harga minyak mentah global, nilai tukar USD/IDR, dan tingkat inflasi di Indonesia. Tujuannya adalah menyediakan pipeline ETL yang membersihkan, menggabungkan, dan memproses data ekonomi dari sumber terbuka, lalu membangun model prediksi inflasi yang dapat digunakan untuk analisis kebijakan dan visualisasi interaktif.
 
-## 2. Data Source Analysis
+Proyek juga menekankan transformasi data menjadi format yang dapat dimuat ke database PostgreSQL, serta menyajikan hasil melalui aplikasi Streamlit dan notebook analisis.
 
-### 2.1 Data Pemerintah (Open Data BPS)
+---
 
-#### Source Details
+## Manfaat Data / Use Case
+- **Tujuan Proyek:** Menyediakan data terintegrasi yang menggambarkan hubungan antara harga minyak, kurs USD/IDR, dan inflasi Indonesia.
+- **Manfaat:**
+  - Menyediakan sumber data yang telah melalui proses validasi dan transformasi, sehingga siap digunakan untuk studi lanjutan.
+  - Mendukung pengembangan model prediktif untuk mitigasi risiko inflasi.
+  - Hasil ETL proyek ini mendukung dashboard visualisasi interaktif dan analisis tren makroekonomi.
 
-- **Dataset Name**: Inflasi Bulanan (M-to-M) 2020-2026
-- **URL/Access Point**: https://www.bps.go.id/id/statistics-table/2/MSMy/inflasi-bulanan-m-to-m-.html
-- **Data Owner**: Badan Pusat Statistik (BPS) Republik Indonesia
-- **Update Frequency**: Bulanan
+---
 
-#### Data Analysis
+## Serving Analisis
+Data hasil ETL disimpan dalam database PostgreSQL Aiven dan dapat diakses untuk eksplorasi lanjutan melalui Google Colab atau aplikasi Streamlit.
+Penyimpanan ini memungkinkan analisis korelasi, distribusi inflasi, dan pemantauan perubahan nilai tukar serta harga minyak.
 
-- **Format Data**: CSV
-- **Volume Data**: 69.4 KB (7 file CSV)
-- **Time Coverage**: Data persentase inflasi dengan rincian per bulan (Januari - Desember).
-- **Data Quality**:
-  - Completeness: Sangat Tinggi. Meliputi data pergerakan persentase inflasi bulanan (Month-to-Month) secara lengkap untuk puluhan kota/kabupaten pengukur inflasi di Indonesia.
-  - Accuracy: Sangat Tinggi. Merupakan data Indeks Harga Konsumen (IHK) resmi yang dirilis oleh negara.
-  - Consistency: Sangat Baik. Format tabel konsisten menyajikan daftar kota/kabupaten yang disandingkan dengan nilai inflasi tiap bulannya.
-  - Timeliness: Up-to-date dan rutin diterbitkan oleh BPS setiap awal bulan berikutnya.
+## Serving Machine Learning
+Dataset bersih digunakan untuk membangun model prediksi inflasi menggunakan machine learning.
+Proyek ini mengimplementasikan Gradient Boosting Regressor dan scaler untuk preprocessing fitur.
+Model disimpan di folder `models/` dan digunakan oleh `app.py` untuk simulasi prediksi inflasi.
 
-### 2.2 Open Data Website
+---
 
-#### Source Details
+# Pipeline
+## Extract (Pengambilan Data)
+- **Sumber Data:**
+  - Harga minyak mentah global – `data/crude-oil-price.csv`
+  - Inflasi bulanan Indonesia – file CSV `Inflasi Bulanan (M-to-M), YYYY.csv`
+  - Nilai tukar USD/IDR disertakan dalam dataset yang sama
 
-- **Dataset Name**: Crude Oil Price WTI
-- **URL/Access Point**: https://www.macrotrends.net/1369/crude-oil-price-history-chart
-- **Creator/Publisher**: Macrotrends LLC (sumber primer: U.S. EIA – Energy Information Administration)
-- **Update Frequency:**: Bulanan 
+- **Metode Pengambilan:**
+  - Pembacaan CSV menggunakan `pandas.read_csv()`
+  - Akses data SQL melalui koneksi Aiven PostgreSQL untuk aplikasi Streamlit
 
-#### Data Analysis
+---
 
-- **Format Data**: CSV
-- **Size & Dimensions**: ±18 KB
-- **Data Fields**:
-  - date
-  - value
-- **Quality Metrics**:
-  - Missing Values: Tidak ada 
-  - Data Types: Properly formatted
-  - Consistency: High
-  - Documentation Quality: Excellent
+## Transform (Pembersihan & Transformasi)
+- **Pembersihan:**
+  - Menghapus kolom dan baris kosong (`dropna()`)
+  - Menyelaraskan nama kolom dan format tanggal
+  - Memastikan tipe data numerik konsisten untuk analisis
 
-### 2.3 Public APIs
+- **Transformasi:**
+  - Menggabungkan data inflasi, harga minyak, dan kurs berdasarkan tahun dan bulan
+  - Menghitung `perubahan_persen_minyak` sebagai fitur utama
+  - Mengonversi hasil agregasi ke bentuk yang siap dimuat ke database
 
-#### Source Details
+---
 
-- **API Name**: exchange-api
-- **Endpoint URL**: https://cdn.jsdelivr.net/npm/@fawazahmed0/currency-api@{YYYY-MM-DD}/v1/currencies/usd.json
-- **Provider**: fawazahmed0 (github)
-- **Authentication Method**: API Key
+## Load (Pemindahan ke Target)
+- **Target:**
+  - Tabel baru di database PostgreSQL Aiven, sebagai sumber data untuk visualisasi dan analisis.
 
-#### API Analysis
+- **Metode:**
+  - `DataFrame.to_sql()` dari Pandas untuk menulis data ke database
+  - Koneksi dibuat menggunakan SQLAlchemy dan kredensial environment
+  - Verifikasi dilakukan dengan `pd.read_sql()` dan `df.head()`
 
-- **Response Format**: JSON
-- **Rate Limits**: No Limit
-- **Reliability**: 99.9% uptime
-- **Documentation Quality**: Comprehensive
-- **Cost**: Free
+---
 
-### 2.4 Open Report Data
+## Arsitektur / Workflow ETL
+- **Alur Modular:**
+  - Proses ETL diorganisir ke dalam fungsi terpisah untuk ekstraksi, transformasi, dan pemuatan.
+  - `app.py` menampilkan hasil simulasi dan menggunakan model yang sudah dilatih.
 
-#### Source Details
+- **Tools yang Digunakan:**
+  - Python 3.x
+  - Library: `pandas`, `numpy`, `sqlalchemy`, `matplotlib`, `seaborn`, `scikit-learn`, `joblib`, `streamlit`, `plotly`
+  - Database: PostgreSQL Aiven
 
-- **Dataset Name**: Laporan Kinerja (LAKIN) Direktorat Jenderal Minyak dan Gas Bumi, Kementerian ESDM Tahun 2022
-- **Repository**: https://migas.esdm.go.id/cms/uploads/uploads/LAKIN-Ditjen-Migas-2022-24Feb2023-Final.pdf
-- **Report Department**: Kementerian Energi dan Sumber Daya Mineral (ESDM) Republik Indonesia
-- **Publication Date**: 2022
+---
 
-#### Data Analysis
+## Kode Program
+- **Struktur Kode:**
+  - `ETL_Harga_Minyak_Inflasi_Indonesia.ipynb` untuk pipeline ETL
+  - `Prediksi_Inflasi_Model.ipynb` untuk pengembangan model ML
+  - `app.py` untuk aplikasi Streamlit dan prediksi live
 
-- **Format & Structure**: PDF
-- **Data Volume**: ±15 MB
-- **Data Quality**: Peer-reviewed
+- **Machine Learning:**
+  - Model utama: Gradient Boosting Regressor
+  - Fitur: harga minyak mentah, perubahan harga minyak, kurs USD/IDR
+  - Evaluasi: model disimpan dalam `models/best_model.pkl` dan scaler di `models/scaler.pkl`
+
+---
+
+## Cara Menjalankan
+1. Install dependensi:
+   ```bash
+   pip install -r requirements.txt
+   ```
+2. Jalankan aplikasi Streamlit:
+   ```bash
+   streamlit run app.py
+   ```
+3. Buka notebook untuk eksplorasi ETL dan model.
+
+---
+
+## Struktur Folder
+- `app.py` - aplikasi Streamlit untuk prediksi inflasi
+- `ETL_Harga_Minyak_Inflasi_Indonesia.ipynb` - notebook ETL
+- `Prediksi_Inflasi_Model.ipynb` - notebook machine learning
+- `data/` - dataset input
+- `models/` - model dan scaler yang disimpan
+- `requirements.txt` - dependensi Python
