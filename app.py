@@ -104,7 +104,7 @@ with st.sidebar:
 # 4. JUDUL HALAMAN UTAMA
 # ==========================================
 st.title("Forecasting & Analisis Inflasi Indonesia")
-st.markdown("Aplikasi simulasi berbasis Machine Learning (Gradient Boosting Regressor) untuk memproyeksikan tingkat inflasi bulanan berdasarkan indikator makroekonomi utama.")
+st.markdown("Sistem analitik berbasis Machine Learning (Gradient Boosting Regressor) untuk memprediksi inflasi di Indonesia berdasarkan harga minyak mentah global dan nilai tukar Rupiah.")
 st.divider()
 
 # ==========================================
@@ -156,7 +156,7 @@ with col_output:
         "Komponen Analisis": ["Prediksi Algoritma ML", "Faktor Penyesuaian BBM"],
         "Kontribusi": [f"{pred_dasar_ml:.2f}%", f"{efek_bbm:+.2f}%"]
     })
-    st.dataframe(df_rincian, hide_index=True, use_container_width=True)
+    st.dataframe(df_rincian, hide_index=True, width='stretch')
 
     if pred_final > 1.0:
         st.error("Peringatan: Risiko inflasi tinggi terdeteksi pada skenario ini.")
@@ -228,4 +228,4 @@ fig_fc.update_layout(
     margin=dict(l=0, r=0, t=40, b=0)
 )
 
-st.plotly_chart(fig_fc, use_container_width=True)
+st.plotly_chart(fig_fc, width='stretch')

@@ -23,3 +23,7 @@ python-dotenv>=1.0.0
 jupyter>=1.0.0
 ipykernel>=6.0.0
 nbformat>=5.7.0
+
+# Aplikasi Web
+streamlit>=1.30.0
+plotly>=5.18.0
