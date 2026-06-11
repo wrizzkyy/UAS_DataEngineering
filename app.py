@@ -18,10 +18,33 @@ st.set_page_config(page_title="Forecasting Inflasi", layout="wide")
 def load_data():
     """Mengambil dan melakukan pra-pemrosesan data mentah dari database."""
     load_dotenv()
+    
+    # Prioritas: st.secrets (Streamlit Cloud) > os.getenv (local .env)
+    try:
+        aiven_user = st.secrets.get("AIVEN_USER") or os.getenv("AIVEN_USER")
+        aiven_password = st.secrets.get("AIVEN_PASSWORD") or os.getenv("AIVEN_PASSWORD")
+        aiven_host = st.secrets.get("AIVEN_HOST") or os.getenv("AIVEN_HOST")
+        aiven_port = st.secrets.get("AIVEN_PORT") or os.getenv("AIVEN_PORT")
+        aiven_database = st.secrets.get("AIVEN_DATABASE") or os.getenv("AIVEN_DATABASE")
+    except Exception:
+        # Fallback jika st.secrets tidak tersedia
+        aiven_user = os.getenv("AIVEN_USER")
+        aiven_password = os.getenv("AIVEN_PASSWORD")
+        aiven_host = os.getenv("AIVEN_HOST")
+        aiven_port = os.getenv("AIVEN_PORT")
+        aiven_database = os.getenv("AIVEN_DATABASE")
+    
+    # Validasi environment variables
+    if not all([aiven_user, aiven_password, aiven_host, aiven_port, aiven_database]):
+        raise ValueError(
+            "Database credentials tidak lengkap. "
+            "Pastikan AIVEN_USER, AIVEN_PASSWORD, AIVEN_HOST, AIVEN_PORT, AIVEN_DATABASE tersedia."
+        )
+    
     conn_str = (
-        f"postgresql+psycopg2://{os.getenv('AIVEN_USER')}:{os.getenv('AIVEN_PASSWORD')}"
-        f"@{os.getenv('AIVEN_HOST')}:{os.getenv('AIVEN_PORT')}"
-        f"/{os.getenv('AIVEN_DATABASE')}?sslmode=require"
+        f"postgresql+psycopg2://{aiven_user}:{aiven_password}"
+        f"@{aiven_host}:{aiven_port}"
+        f"/{aiven_database}?sslmode=require"
     )
     
     engine = create_engine(conn_str, connect_args={"connect_timeout": 10})
