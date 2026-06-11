@@ -6,8 +6,6 @@ import plotly.graph_objects as go
 import joblib
 from sqlalchemy import create_engine
 from dotenv import load_dotenv
-from sklearn.ensemble import GradientBoostingRegressor
-from sklearn.preprocessing import StandardScaler
 
 # Konfigurasi Halaman
 st.set_page_config(page_title="Forecasting Inflasi", layout="wide")
@@ -91,42 +89,19 @@ def load_saved_model():
     """Memuat model yang sudah dilatih dari file joblib.
     
     Model disimpan oleh notebook Prediksi_Inflasi_Model.ipynb.
-    Jika file model tidak ditemukan, akan melatih ulang model.
     """
     model_path = os.path.join(MODEL_DIR, "best_model.pkl")
     scaler_path = os.path.join(MODEL_DIR, "scaler.pkl")
     
-    if os.path.exists(model_path) and os.path.exists(scaler_path):
-        model = joblib.load(model_path)
-        scaler = joblib.load(scaler_path)
-        return model, scaler
-    else:
-        # Fallback: latih ulang jika model belum tersimpan
-        return _train_model_fallback(df)
-
-@st.cache_resource
-def _train_model_fallback(data):
-    """Melatih ulang model sebagai fallback jika file model tidak ditemukan."""
-    fitur_kolom = ["harga_minyak_usd", "perubahan_persen_minyak", "kurs_usd_idr"]
-    target_kolom = "inflasi_persen"
+    if not os.path.exists(model_path) or not os.path.exists(scaler_path):
+        raise FileNotFoundError(
+            "File model tidak ditemukan di folder 'models/'. "
+            "Pastikan best_model.pkl dan scaler.pkl tersedia."
+        )
     
-    X = data[fitur_kolom].copy()
-    y = data[target_kolom].copy()
-    
-    scaler = StandardScaler()
-    X_scaled = scaler.fit_transform(X)
-    
-    gb_model = GradientBoostingRegressor(
-        n_estimators=200,
-        learning_rate=0.1,
-        max_depth=5,
-        min_samples_split=5,
-        min_samples_leaf=2,
-        random_state=42
-    )
-    gb_model.fit(X_scaled, y)
-    
-    return gb_model, scaler
+    model = joblib.load(model_path)
+    scaler = joblib.load(scaler_path)
+    return model, scaler
 
 gb_model, scaler = load_saved_model()
 
